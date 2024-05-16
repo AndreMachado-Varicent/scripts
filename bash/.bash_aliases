@@ -8,13 +8,78 @@ alias ys='yarn start'
 alias ts='cd ~/code/icm-cloud/packages/tenant-services && npm run simple'
 alias killnode='cmd "/C TASKKILL /IM node.exe /F"'
 
-# create a branch to resolve conflicts between branches 
-#release and release2
-alias ccc12='git stash;   git fetch -p; git co release2; git pull; git co -b resolve-conflicts-release-release2-`date +%s`;   git merge --no-ff origin/release;'
-# production and release
-alias cccp1='git stash;   git fetch -p; git co release;  git pull; git co -b resolve-conflicts-production-release-`date +%s`; git merge --no-ff origin/production;'
-# release2 and exp
-alias ccc2exp='git stash; git fetch -p; git co exp;      git pull; git co -b resolve-conflicts-release2-exp`date +%s`;        git merge --no-ff origin/release2;'
+function check_git_repo() {
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        return 1
+    fi
+}
 
-# delete all local branches that have been deleted on remote
-    alias delGone="git fetch --all --prune; git branch -vv | awk '/: gone]/{print $1}' | xargs -r git branch -D"
+function check_pending_merge() {
+    if [ -f .git/MERGE_HEAD ]; then
+        return 1
+    fi
+}
+
+/**
+ * Resolve conflicts between two branches.
+ *
+ * @param {string} branch - The branch to merge into.
+ * @param {string} merge_branch - The branch to merge from.
+ * @param {string} new_branch_suffix - The suffix to append to the new branch name.
+ */
+function resolve_conflicts() {
+    if ! check_git_repo; then
+        echo "Not a git repository. Exiting..." >&2
+        return
+    fi
+
+    if ! check_pending_merge; then
+        echo "There is a pending merge. Exiting..." >&2
+        return
+    fi
+
+    local branch=$1
+    local merge_branch=$2
+    local new_branch_suffix=$3
+
+    set -e
+    git stash
+    git fetch -p
+    git checkout $branch
+    git pull
+    git checkout -b resolve-conflicts-$new_branch_suffix-$(date +%s)
+    git merge --no-ff origin/$merge_branch
+}
+
+function conflicts12() {
+    resolve_conflicts "release2" "release" "release-release2"
+}
+
+function conflictsp1() {
+    resolve_conflicts "release" "production" "production-release"
+}
+
+function conflicts2exp() {
+    resolve_conflicts "exp" "release2" "release2-exp"
+}
+
+/**
+ * Delete branches that are no longer on the remote.
+ */
+function delGone() {
+    if ! is_git_repo; then
+        echo "Not a git repository. Exiting..." >&2
+        return
+    fi
+
+    set -e
+    git fetch --all --prune
+    git branch -vv | awk '/: gone]/{print $1}' | xargs -r git branch -D
+}
+
+
+alias ccc12='conflicts12'
+alias cccp1='conflictsp1'
+alias ccc2exp='conflicts2exp'
+
+alias delGone='delGone'
