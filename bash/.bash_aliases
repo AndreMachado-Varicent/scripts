@@ -20,13 +20,12 @@ function check_pending_merge() {
     fi
 }
 
-/**
- * Resolve conflicts between two branches.
- *
- * @param {string} branch - The branch to merge into.
- * @param {string} merge_branch - The branch to merge from.
- * @param {string} new_branch_suffix - The suffix to append to the new branch name.
- */
+# Resolve conflicts between two branches.
+#
+# Parameters:
+#   branch - The branch to merge into.
+#   merge_branch - The branch to merge from.
+#   new_branch_suffix - The suffix to append to the new branch name.
 function resolve_conflicts() {
     if ! check_git_repo; then
         echo "Not a git repository. Exiting..." >&2
@@ -63,11 +62,9 @@ function conflicts2exp() {
     resolve_conflicts "exp" "release2" "release2-exp"
 }
 
-/**
- * Delete branches that are no longer on the remote.
- */
+# Delete branches that are no longer on the remote.
 function delGone() {
-    if ! is_git_repo; then
+    if ! check_git_repo; then
         echo "Not a git repository. Exiting..." >&2
         return
     fi
@@ -83,3 +80,7 @@ alias cccp1='conflictsp1'
 alias ccc2exp='conflicts2exp'
 
 alias delGone='delGone'
+
+alias var='cd ~/code/Varicent'
+alias icmui='cd ~/code/icm-ui'
+
