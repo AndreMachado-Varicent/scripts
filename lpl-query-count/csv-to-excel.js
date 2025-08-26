@@ -39,9 +39,12 @@ function convertCSVToExcel(inputFilePath, outputFilePath) {
         const csvContent = fs.readFileSync(inputFilePath, 'utf8');
         const lines = csvContent.split('\n');
 
-        // Parse each line and collect valid data
+        // Parse each line and collect only records that contain 'PresenterFlex'
         const data = [];
         lines.forEach((line, index) => {
+            if (!line.includes('PresenterFlex')) {
+                return;
+            }
             const parsed = parseCSVLine(line);
             if (parsed) {
                 data.push(parsed);
