@@ -10,30 +10,25 @@ const XLSX = require('xlsx');
 function parseCSVLine(line) {
     if (!line.trim()) return null;
 
-    // Split by semicolon to get the three parts
-    const parts = line.split(';');
-    if (parts.length < 3) return null;
+    // Robustly parse lines of the form:
+    // <number>;desc="<description>";dur=<duration>
+    const match = line.match(/^\s*([^;]+);desc="([\s\S]*?)";dur=([0-9]*\.?[0-9]+)\s*$/);
+    if (!match) return null;
 
-    // Extract number (first part)
-    const number = parts[0].trim();
-
-    // Extract description (second part, remove desc=" and closing quote)
-    const descMatch = parts[1].match(/desc="(.+)"/);
-    const description = descMatch ? descMatch[1] : parts[1].replace('desc=', '').replace(/"/g, '');
-
-    // Extract duration (third part, remove dur=)
-    const duration = parts[2].replace('dur=', '').trim();
+    const number = match[1].trim();
+    const description = match[2];
+    const duration = parseFloat(match[3]);
 
     return {
         number: number,
         description: description,
-        duration: parseFloat(duration)
+        duration: duration
     };
 }
 
 function convertCSVToExcel(inputFilePath, outputFilePath) {
     try {
-        console.log(`Reading CSV file: ${inputFilePath}`);
+        console.log(`Reading input file: ${inputFilePath}`);
 
         // Read the CSV file
         const csvContent = fs.readFileSync(inputFilePath, 'utf8');
@@ -101,10 +96,11 @@ function main() {
     const args = process.argv.slice(2);
 
     if (args.length === 0) {
-        console.log('Usage: node csv-to-excel.js <input-csv-file> [output-excel-file]');
+        console.log('Usage: node csv-to-excel.js <input-file> [output-excel-file]');
         console.log('');
         console.log('Examples:');
         console.log('  node csv-to-excel.js data.csv');
+        console.log('  node csv-to-excel.js data.sql');
         console.log('  node csv-to-excel.js data.csv output.xlsx');
         console.log('');
         console.log('If no output file is specified, it will use the input filename with .xlsx extension');
@@ -121,7 +117,8 @@ function main() {
     }
 
     // Build output file path under ./output/
-    const defaultOutputName = path.basename(inputFile).replace(/\.csv$/i, '.xlsx');
+    const inputBase = path.basename(inputFile);
+    const defaultOutputName = inputBase.replace(/\.[^.]+$/i, '') + '.xlsx';
     const requestedOutputName = args[1] ? path.basename(args[1]) : defaultOutputName;
     const outputFile = path.join(outputDir, requestedOutputName);
 
