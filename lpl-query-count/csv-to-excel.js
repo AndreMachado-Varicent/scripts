@@ -105,11 +105,22 @@ function main() {
         console.log('  node csv-to-excel.js data.csv output.xlsx');
         console.log('');
         console.log('If no output file is specified, it will use the input filename with .xlsx extension');
+        console.log('All Excel files are written to the ./output/ directory.');
         process.exit(1);
     }
 
     const inputFile = args[0];
-    const outputFile = args[1] || inputFile.replace(/\.csv$/i, '.xlsx');
+
+    // Ensure output directory exists (./output relative to this script)
+    const outputDir = path.resolve(__dirname, 'output');
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // Build output file path under ./output/
+    const defaultOutputName = path.basename(inputFile).replace(/\.csv$/i, '.xlsx');
+    const requestedOutputName = args[1] ? path.basename(args[1]) : defaultOutputName;
+    const outputFile = path.join(outputDir, requestedOutputName);
 
     // Check if input file exists
     if (!fs.existsSync(inputFile)) {
