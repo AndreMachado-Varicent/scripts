@@ -1,0 +1,53 @@
+From 95f45f6bfd57b5fa4cd3c19b75837c2028340e7d Mon Sep 17 00:00:00 2001
+From: Alexander Shashkin <ashashkin@varicent.com>
+Date: Thu, 21 Aug 2025 11:25:44 -0400
+Subject: [PATCH] Counters
+
+---
+ Source/RESTAPI/v1/Controllers/PresenterFlexController.cs | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/Source/RESTAPI/v1/Controllers/PresenterFlexController.cs b/Source/RESTAPI/v1/Controllers/PresenterFlexController.cs
+index 4a857160f19..774e3ec5e1a 100644
+--- a/Source/RESTAPI/v1/Controllers/PresenterFlexController.cs
++++ b/Source/RESTAPI/v1/Controllers/PresenterFlexController.cs
+@@ -21,6 +21,7 @@ using Varicent.Core;
+ using Varicent.Core.Configuration;
+ using Varicent.Core.Exceptions;
+ using Varicent.Data.BPM;
++using Varicent.Core.Diagnostics.Timing;
+ using Varicent.Data.CloudDataWarehouse;
+ using Varicent.Data.Config;
+ using Varicent.Data.Core.Security;
+@@ -979,6 +980,9 @@ namespace RESTAPI.v1.Controllers
+ 		private void WriteResponseStreamForPayeeBatchV2(int reportId, PresenterFlexSourceBatchDTO[] sources,
+ 			Dictionary<int, string> selectedParams, StreamResponseUtil.JsonWriter writer)
+ 		{
++			var groups = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100);
++			var headerValues = TimingUtil.GenerateHeaderValues(groups, maxLabelLength: 1000000).ToArray();
++
+ 			DateTime dateTimePtz = _projectTimeZoneMgr.GetCurrentTimeInProjectTimeZone();
+ 			var currentDate = DateFormat.ResetTimeToMidnight(dateTimePtz);
+ 
+@@ -1150,6 +1154,9 @@ namespace RESTAPI.v1.Controllers
+ 							Log.Write(error.Message, Log.LogLevel.Error);
+ 							writer.WriteJson(new { source.id, source.sourceId, error.Message });
+ 						}
++
++						var groups2 = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100);
++						var headerValues2 = TimingUtil.GenerateHeaderValues(groups2, maxLabelLength: 1000000).ToArray();
+ 					}
+ 					catch (Exception e)
+ 					{
+@@ -1163,6 +1170,8 @@ namespace RESTAPI.v1.Controllers
+ 					}
+ 				}, maxDegreeOfParallelism: BatchParallelism);
+ 			writer.WriteJson(new { type = "metrics", events = timer.Events });
++			var groups2 = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100);
++			var headerValues2 = TimingUtil.GenerateHeaderValues(groups2, maxLabelLength: 1000000).ToArray();
+ 		}
+ 
+ 		private void WriteCombinedResponseStreamForPayee(PresenterFlexReport report, Dictionary<int, FullTableSchema> sourceSchemas,
+-- 
+2.50.1.windows.1
+

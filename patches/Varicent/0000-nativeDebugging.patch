@@ -1,0 +1,23 @@
+diff --git i/Source/RESTAPI/Properties/launchSettings.json w/Source/RESTAPI/Properties/launchSettings.json
+index 881ef029a99..fcd2cd96e26 100644
+--- i/Source/RESTAPI/Properties/launchSettings.json
++++ w/Source/RESTAPI/Properties/launchSettings.json
+@@ -1,16 +1,16 @@
+ {
+   "profiles": {
+     "RESTAPI": {
+       "commandName": "Project",
+-      "nativeDebugging": true,
++      "nativeDebugging": false,
+       "hotReloadEnabled": false
+     },
+     "WSL": {
+       "commandName": "WSL",
+       "launchBrowser": false,
+-      "nativeDebugging": true,
++      "nativeDebugging": false,
+       "hotReloadEnabled": false,
+       "distributionName": ""
+     }
+   }
+ }

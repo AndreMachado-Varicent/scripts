@@ -1,0 +1,100 @@
+From 693f7f429d722b87f1209ef0e26472d6e18750f9 Mon Sep 17 00:00:00 2001
+From: Alexander Shashkin <ashashkin@varicent.com>
+Date: Fri, 12 Sep 2025 10:22:00 -0400
+Subject: [PATCH] DO NOT MERGE: Query Counts
+
+---
+ .../RequestQueryCache.cs                         |  1 +
+ .../v1/Controllers/PresenterFlexController.cs    | 16 ++++++++++++++++
+ 2 files changed, 17 insertions(+)
+
+diff --git a/Source/Portability/DB/QueryExecutionStrategies/RequestQueryCache.cs b/Source/Portability/DB/QueryExecutionStrategies/RequestQueryCache.cs
+index fe136a22454..7b2513e91b2 100644
+--- a/Source/Portability/DB/QueryExecutionStrategies/RequestQueryCache.cs
++++ b/Source/Portability/DB/QueryExecutionStrategies/RequestQueryCache.cs
+@@ -13,6 +13,7 @@ public sealed class RequestQueryCache
+ 	/// </summary>
+ 	public static void EnableCacheForCurrentRequest()
+ 	{
++		return;
+ 		_cache.Value = new ConcurrentDictionary<string, object>();
+ 	}
+ 
+diff --git a/Source/RESTAPI/v1/Controllers/PresenterFlexController.cs b/Source/RESTAPI/v1/Controllers/PresenterFlexController.cs
+index 29f0d72ac3d..fe3f80f7084 100644
+--- a/Source/RESTAPI/v1/Controllers/PresenterFlexController.cs
++++ b/Source/RESTAPI/v1/Controllers/PresenterFlexController.cs
+@@ -21,6 +21,7 @@ using System.Web;
+ using Varicent.Controller.Interfaces;
+ using Varicent.Core;
+ using Varicent.Core.Configuration;
++using Varicent.Core.Diagnostics.Timing;
+ using Varicent.Data.CloudDataWarehouse;
+ using Varicent.Data.Config;
+ using Varicent.Data.Core.Security;
+@@ -179,6 +180,8 @@ namespace RESTAPI.v1.Controllers
+ 					id,
+ 					context.BPMTokenID ?? -1,
+ 					context.WorkflowID ?? -1);
++				var groups = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100000);
++				var stats = $"{UserContext.Current.DeveloperTiming.Spans.Length} {groups.Count()} {groups.FirstOrDefault().Count}";
+ 
+ 				return Ok(new PresenterFlexReportWithSourceSchemasDTO(report, sourceSchemas, null, new Dictionary<int, TableDefinition>()));
+ 			}
+@@ -237,6 +240,9 @@ namespace RESTAPI.v1.Controllers
+ 		[PayeeWebUserAuthHandler]
+ 		public ActionResult EvaluateReportValuesForPayeeV2(int id, [FromBody] PresenterFlexReportEvaluationContextDTO context)
+ 		{
++			var groups = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100000);
++			var stats = $"{UserContext.Current.DeveloperTiming.Spans.Length} {groups.Count()} {groups.FirstOrDefault().Count}";
++
+ #pragma warning disable VARICENT019 // This is one of three places where this feature is allowed.
+ 			if (UserContext.Current.HasFlag(FeatureFlags.EnableRequestQueryCacheInPA))
+ 				RequestQueryCache.EnableCacheForCurrentRequest();
+@@ -342,6 +348,8 @@ namespace RESTAPI.v1.Controllers
+ 				Dictionary<int, string> nonDataGridLinkJWTs = _presenterFlexMgr.GenerateLinkJWTsNonDataGrid(id, UserContext.Current.PayeeContext.PayeeID, evaluatedValues, context.BPMFormID ?? -1);
+ 
+ 				var presenterFlexEvaluateReportValues = new PresenterFlexEvaluateReportValues(evaluatedValues, secureParamError, nonDataGridLinkJWTs);
++				var groups2 = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100000);
++				var stats2 = $"{UserContext.Current.DeveloperTiming.Spans.Length} {groups2.Count()} {groups2.FirstOrDefault().Count}";
+ 
+ 				return Ok(new PresenterFlexEvaluateReportValuesDTO(presenterFlexEvaluateReportValues));
+ 			}
+@@ -1046,6 +1054,8 @@ namespace RESTAPI.v1.Controllers
+ 
+ 		private ActionResult GetResponseStreamForPayeeBatchV2(int reportId, PresenterFlexSourceBatchDTO[] sources, Dictionary<int, string> selectedParams)
+ 		{
++			var groups = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100000);
++			var stats = $"{UserContext.Current.DeveloperTiming.Spans.Length} {groups.Count()} {groups.FirstOrDefault().Count}";
+ 			var dataStoreManager = new DataStoreMgr(cachePortDefinitions: true, cacheTaggedList: true, cacheSchema: true, cacheDataStore: true);
+ 			DateTime dateTimePTZ = _projectTimeZoneMgr.GetCurrentTimeInProjectTimeZone();
+ 			var currentDate = DateFormat.ResetTimeToMidnight(dateTimePTZ);
+@@ -1206,12 +1216,16 @@ namespace RESTAPI.v1.Controllers
+ 				}, maxDegreeOfParallelism: BatchParallelism);
+ 
+ 				writer.WriteJson(new { type = "metrics", events = timer.Events });
++				var groups2 = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100000);
++				var stats2 = $"{UserContext.Current.DeveloperTiming.Spans.Length} {groups2.Count()} {groups2.FirstOrDefault().Count}";
+ 			}, useLock: true);
+ 		}
+ 
+ 		private void WriteResponseStreamForPayeeBatchV2(int reportId, PresenterFlexSourceBatchDTO[] sources,
+ 			Dictionary<int, string> selectedParams, StreamResponseUtil.JsonWriter writer)
+ 		{
++			var groups = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100000);
++			var stats = $"{UserContext.Current.DeveloperTiming.Spans.Length} {groups.Count()} {groups.FirstOrDefault().Count}";
+ 			DateTime dateTimePtz = _projectTimeZoneMgr.GetCurrentTimeInProjectTimeZone();
+ 			var currentDate = DateFormat.ResetTimeToMidnight(dateTimePtz);
+ 
+@@ -1379,6 +1393,8 @@ namespace RESTAPI.v1.Controllers
+ 					}
+ 				}, maxDegreeOfParallelism: BatchParallelism);
+ 			writer.WriteJson(new { type = "metrics", events = timer.Events });
++			var groups2 = TimingUtil.Summarize(UserContext.Current.DeveloperTiming.Spans, maxGroups: 100000);
++			var stats2 = $"{UserContext.Current.DeveloperTiming.Spans.Length} {groups2.Count()} {groups2.FirstOrDefault().Count}";
+ 		}
+ 
+ 		[HttpPost("api/internal/payee/presenterflex/sourcedata/batchV2")]
+-- 
+2.50.1.windows.1
+
