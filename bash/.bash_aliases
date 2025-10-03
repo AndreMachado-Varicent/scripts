@@ -107,11 +107,14 @@ function delGone() {
         return
     fi
 
-    set -e
-    git fetch --all --prune
+    (set -e
+    git fetch -f --all --prune
     git branch -vv | awk '/: gone]/{print $1}' | xargs -r git branch -D
+    ) || {
+        echo "delGone failed. See errors above." >&2
+        return 1
+    }
 }
-
 
 alias ccc='conflicts_fzf'
 
