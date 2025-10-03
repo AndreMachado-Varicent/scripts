@@ -41,25 +41,63 @@ function resolve_conflicts() {
     local merge_branch=$2
     local new_branch_suffix=$3
 
-    set -e
-    git stash
-    git fetch -p
-    git checkout $branch
-    git pull
-    git checkout -b resolve-conflicts-$new_branch_suffix-$(date +%s)
-    git merge --no-ff origin/$merge_branch
+    (
+        set -e
+        git stash
+        git fetch -p
+        git checkout $branch
+        git pull
+        git checkout -b resolve-conflicts-$new_branch_suffix-$(date +%s)
+        git merge --no-ff origin/$merge_branch
+    ) || {
+        echo "resolve_conflicts failed. See errors above." >&2
+        return 1
+    }
 }
 
-function conflicts12() {
-    resolve_conflicts "release2" "release" "release-release2"
-}
+function conflicts_fzf() {
+    if ! check_git_repo; then
+        echo "Not a git repository. Exiting..." >&2
+        return
+    fi
 
-function conflictsp1() {
-    resolve_conflicts "release" "production" "production-release"
-}
+    if ! check_pending_merge; then
+        echo "There is a pending merge. Exiting..." >&2
+        return
+    fi
 
-function conflicts2exp() {
-    resolve_conflicts "exp" "release2" "release2-exp"
+    if ! command -v fzf >/dev/null 2>&1; then
+        echo "fzf is not installed or not in PATH. Please install fzf." >&2
+        return
+    fi
+
+    local choice
+    choice=$(printf "%s\n" \
+        "release2 <- release" \
+        "release <- production" \
+        "exp <- release2" \
+        | fzf --height=40% --reverse --prompt="Select merge pair: ")
+
+    if [ -z "$choice" ]; then
+        echo "No option selected. Aborting." >&2
+        return
+    fi
+
+    case "$choice" in
+        "release2 <- release")
+            resolve_conflicts "release2" "release" "release-release2"
+            ;;
+        "release <- production")
+            resolve_conflicts "release" "production" "production-release"
+            ;;
+        "exp <- release2")
+            resolve_conflicts "exp" "release2" "release2-exp"
+            ;;
+        *)
+            echo "Invalid selection. Aborting." >&2
+            return
+            ;;
+    esac
 }
 
 # Delete branches that are no longer on the remote.
@@ -75,9 +113,7 @@ function delGone() {
 }
 
 
-alias ccc12='conflicts12'
-alias cccp1='conflictsp1'
-alias ccc2exp='conflicts2exp'
+alias ccc='conflicts_fzf'
 
 alias delGone='delGone'
 
