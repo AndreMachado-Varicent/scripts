@@ -58,32 +58,38 @@ function resolve_conflicts() {
 function conflicts_fzf() {
     if ! check_git_repo; then
         echo "Not a git repository. Exiting..." >&2
-        return
+        return 1
     fi
 
     if ! check_pending_merge; then
         echo "There is a pending merge. Exiting..." >&2
-        return
+        return 1
     fi
 
     if ! command -v fzf >/dev/null 2>&1; then
         echo "fzf is not installed or not in PATH. Please install fzf." >&2
-        return
+        return 1
+    fi
+
+    local feature_branch=$1
+    local options="release2 <- release\nrelease <- production\nexp <- release2"
+
+    if [ -n "$feature_branch" ]; then
+        options="$feature_branch <- release2\n$options"
     fi
 
     local choice
-    choice=$(printf "%s\n" \
-        "release2 <- release" \
-        "release <- production" \
-        "exp <- release2" \
-        | fzf --height=40% --reverse --prompt="Select merge pair: ")
+    choice=$(printf "$options" | fzf --height=40% --reverse --prompt="Select merge pair: ")
 
     if [ -z "$choice" ]; then
         echo "No option selected. Aborting." >&2
-        return
+        return 1
     fi
 
     case "$choice" in
+        "$feature_branch <- release2")
+            resolve_conflicts "$feature_branch" "release2" "release2-$feature_branch"
+            ;;
         "release2 <- release")
             resolve_conflicts "release2" "release" "release-release2"
             ;;
@@ -95,7 +101,7 @@ function conflicts_fzf() {
             ;;
         *)
             echo "Invalid selection. Aborting." >&2
-            return
+            return 1
             ;;
     esac
 }
@@ -104,7 +110,7 @@ function conflicts_fzf() {
 function delGone() {
     if ! check_git_repo; then
         echo "Not a git repository. Exiting..." >&2
-        return
+        return 1
     fi
 
     (set -e
